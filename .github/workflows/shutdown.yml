@@ -1,0 +1,18 @@
+name: Stop Railway Service
+
+on:
+  schedule:
+    - cron: '0 21 * * *' # кожного дня о 00:00 за Києвом (21:00 UTC)
+
+jobs:
+  shutdown:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Railway CLI
+        run: npm install -g railway
+
+      - name: Stop Deployment
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway down --project 53d39e84-3714-40a0-8693-f2992e31e4c3 --service 1a622705-0a1d-44c2-8731-84c3f0467481 --yes
