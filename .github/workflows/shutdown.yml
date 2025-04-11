@@ -14,6 +14,11 @@ jobs:
           curl -fsSL https://railway.app/install.sh | sh
           echo "$HOME/.railway/bin" >> $GITHUB_PATH
 
+      - name: 🔗 Підключення до проєкту Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway link --project 53d39e84-3714-40a0-8693-f2992e31e4c3
+
       - name: ⏹️ Виконати railway down
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
