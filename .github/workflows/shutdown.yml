@@ -1,21 +1,46 @@
-name: ⏹️ Shutdown Railway
+name: 🚨 Delete Railway Deployment
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 21 * * *'  # 00:00 за Києвом щодня
 
 jobs:
-  shutdown:
+  delete:
     runs-on: ubuntu-latest
     steps:
-      - name: 🧱 Встановити Railway CLI
-        run: |
-          curl -fsSL https://railway.app/install.sh | sh
-          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+      - name: 🧰 Install jq
+        run: sudo apt-get install jq
 
-      - name: ⏹️ Зупинити останній деплой через Railway CLI
+      - name: ❌ Delete Last Deployment
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          SERVICE_ID: 1a622705-0a1d-44c2-8731-84c3f0467481
+          API_KEY: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway down --yes --project 53d39e84-3714-40a0-8693-f2992e31e4c3
+          echo "📥 Getting deployments..."
+          RESPONSE=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"query { deployments(first: 1, input: { serviceId: \"'"$SERVICE_ID"'\" }) { edges { node { id status createdAt } } } }"}')
+
+          echo "$RESPONSE"
+          DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.data.deployments.edges[0].node.id')
+
+          if [ "$DEPLOY_ID" = "null" ]; then
+            echo "❌ No deployment found."
+            exit 1
+          fi
+
+          echo "🗑 Deleting deployment: $DEPLOY_ID"
+
+          DELETE_RESPONSE=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"mutation { deploymentDelete(id: \"'"$DEPLOY_ID"'\") { id } }"}')
+
+          echo "$DELETE_RESPONSE"
+
+          if echo "$DELETE_RESPONSE" | grep -q "errors"; then
+            echo "❌ Failed to delete deployment."
+            exit 1
+          else
+            echo "✅ Deployment deleted."
+          fi
