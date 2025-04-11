@@ -3,23 +3,19 @@ name: ⏹️ Shutdown Railway
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 21 * * *'  # щодня о 00:00 за Києвом (21:00 UTC)
+    - cron: '0 21 * * *'  # 00:00 за Києвом щодня
 
 jobs:
   shutdown:
     runs-on: ubuntu-latest
     steps:
-      - name: 🧱 Завантажити Railway CLI
+      - name: 🧱 Встановити Railway CLI
         run: |
           curl -fsSL https://railway.app/install.sh | sh
           echo "$HOME/.railway/bin" >> $GITHUB_PATH
 
-      - name: 🔗 Підключення до проєкту Railway
+      - name: ⏹️ Зупинити останній деплой через Railway CLI
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway link --project 53d39e84-3714-40a0-8693-f2992e31e4c3
-
-      - name: ⏹️ Виконати railway down
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway down --yes
+        run: |
+          railway down --yes --project 53d39e84-3714-40a0-8693-f2992e31e4c3
