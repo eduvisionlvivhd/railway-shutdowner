@@ -20,13 +20,10 @@ jobs:
       - name: 🧪 Install Railway CLI
         run: curl -fsSL https://railway.app/install.sh | sh
 
-      - name: 🔐 Set Railway token
+      - name: 🔑 Set Railway Token
         run: echo "RAILWAY_TOKEN=${{ secrets.RAILWAY_TOKEN }}" >> $GITHUB_ENV
 
-      - name: 🚂 Login to Railway
-        run: railway login --browserless
+      - name: 🛑 Run shutdown script
+        run: node scripts/shutdown.js
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: 🛑 Shutdown Railway Service
-        run: node scripts/shutdown.js
