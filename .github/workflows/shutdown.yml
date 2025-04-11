@@ -1,46 +1,32 @@
-name: 🚨 Delete Railway Deployment
+name: Shutdown Railway
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # запуск вручну
+  schedule:
+    - cron: "0 21 * * *" # щодня о 00:00 за Києвом (21:00 UTC)
 
 jobs:
-  delete:
+  shutdown:
     runs-on: ubuntu-latest
     steps:
-      - name: 🧰 Install jq
-        run: sudo apt-get install jq
+      - name: 🚚 Checkout repo
+        uses: actions/checkout@v3
 
-      - name: ❌ Delete Last Deployment
+      - name: 📦 Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 🧪 Install Railway CLI
+        run: curl -fsSL https://railway.app/install.sh | sh
+
+      - name: 🔐 Set Railway token
+        run: echo "RAILWAY_TOKEN=${{ secrets.RAILWAY_TOKEN }}" >> $GITHUB_ENV
+
+      - name: 🚂 Login to Railway
+        run: railway login --browserless
         env:
-          SERVICE_ID: 1a622705-0a1d-44c2-8731-84c3f0467481
-          API_KEY: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          echo "📥 Getting deployments..."
-          RESPONSE=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
-            -H "Authorization: Bearer $API_KEY" \
-            -H "Content-Type: application/json" \
-            -d '{"query":"query { deployments(first: 1, input: { serviceId: \"'"$SERVICE_ID"'\" }) { edges { node { id status createdAt } } } }"}')
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-          echo "$RESPONSE"
-          DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.data.deployments.edges[0].node.id')
-
-          if [ "$DEPLOY_ID" = "null" ]; then
-            echo "❌ No deployment found."
-            exit 1
-          fi
-
-          echo "🗑 Deleting deployment: $DEPLOY_ID"
-
-          DELETE_RESPONSE=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
-            -H "Authorization: Bearer $API_KEY" \
-            -H "Content-Type: application/json" \
-            -d '{"query":"mutation { deploymentDelete(id: \"'"$DEPLOY_ID"'\") { id } }"}')
-
-          echo "$DELETE_RESPONSE"
-
-          if echo "$DELETE_RESPONSE" | grep -q "errors"; then
-            echo "❌ Failed to delete deployment."
-            exit 1
-          else
-            echo "✅ Deployment deleted."
-          fi
+      - name: 🛑 Shutdown Railway Service
+        run: node scripts/shutdown.js
